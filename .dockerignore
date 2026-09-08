@@ -20,6 +20,7 @@ build
 *.sqlite-wal
 *.sqlite-shm
 *.db
+data/
 src/data/*.sqlite*
 
 # Operating system & IDE files

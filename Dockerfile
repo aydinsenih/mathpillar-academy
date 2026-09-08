@@ -45,6 +45,8 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+# Default persistent SQLite database path in container (can be overridden via ENV)
+ENV DATABASE_PATH="/app/data/mathpillar.sqlite"
 
 # Install curl for health checks (used by Coolify / Docker)
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -55,8 +57,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN groupadd --system --gid 1001 nodejs && \
     useradd --system --uid 1001 -g nodejs nextjs
 
-# Ensure persistent data directory exists for SQLite
-RUN mkdir -p /app/src/data && chown -R nextjs:nodejs /app/src/data
+# Ensure persistent data directories exist for SQLite with correct non-root permissions
+RUN mkdir -p /app/data /app/src/data && \
+    chown -R nextjs:nodejs /app/data /app/src/data
+
+# Declare volume for persistent data storage (mount point for Coolify / Docker volumes)
+VOLUME ["/app/data"]
 
 # Copy public assets
 COPY --from=builder /app/public ./public

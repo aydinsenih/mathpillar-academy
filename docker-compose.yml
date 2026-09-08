@@ -1,0 +1,26 @@
+services:
+  mathpillar:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mathpillar:latest
+    container_name: mathpillar-app
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      # SQLite database location inside container
+      - DATABASE_PATH=/app/data/mathpillar.sqlite
+      # Admin Credentials (override in .env or Coolify env variables)
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@mathpillar.com}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
+      - ADMIN_SESSION_TOKEN=${ADMIN_SESSION_TOKEN:-mp_auth_secret_token_2026}
+    volumes:
+      # Named volume for persistent SQLite storage
+      # Preserves your courses, registrations, instructors, and countdown settings across container restarts/rebuilds
+      - mathpillar_data:/app/data
+
+volumes:
+  mathpillar_data:
+    driver: local

@@ -3,7 +3,25 @@ import path from "node:path";
 import fs from "node:fs";
 import { DEFAULT_COURSES } from "./default-courses";
 
-const DB_PATH = process.env.DATABASE_PATH || path.join(process.cwd(), "src/data/mathpillar.sqlite");
+function resolveDatabasePath(): string {
+  const envPath = process.env.DATABASE_PATH?.trim();
+  if (envPath) {
+    return path.isAbsolute(envPath)
+      ? envPath
+      : path.resolve(/*turbopackIgnore: true*/ process.cwd(), envPath);
+  }
+
+  const envDir = (process.env.DATA_DIR || process.env.DATABASE_DIR)?.trim();
+  if (envDir) {
+    return path.isAbsolute(envDir)
+      ? path.join(envDir, "mathpillar.sqlite")
+      : path.resolve(/*turbopackIgnore: true*/ process.cwd(), envDir, "mathpillar.sqlite");
+  }
+
+  return path.join(process.cwd(), "src/data/mathpillar.sqlite");
+}
+
+const DB_PATH = resolveDatabasePath();
 
 interface GlobalWithDb {
   _sqliteDb?: Database.Database;
@@ -17,6 +35,7 @@ function initDatabase(): Database.Database {
     fs.mkdirSync(dbDir, { recursive: true });
   }
 
+  console.log(`[Database] Initializing SQLite database at: ${DB_PATH}`);
   const db = new Database(DB_PATH);
   db.pragma("journal_mode = WAL");
 
@@ -183,4 +202,8 @@ export function getDb(): Database.Database {
     globalForDb._sqliteDb = initDatabase();
   }
   return globalForDb._sqliteDb;
+}
+
+export function getDbPath(): string {
+  return DB_PATH;
 }
