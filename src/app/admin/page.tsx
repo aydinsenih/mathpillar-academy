@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import CoursesCountdown, { parsePDTTimestamp } from "@/components/CoursesCountdown";
-import type { Course, Registration, AppSettings } from "@/lib/courses-db";
+import type { Course, Registration, AppSettings, Instructor } from "@/lib/courses-db";
 import {
   BookOpen,
   Users,
@@ -27,6 +27,8 @@ import {
   Sparkles,
   RotateCcw,
   Save,
+  GraduationCap,
+  User,
 } from "lucide-react";
 
 interface CourseFormData {
@@ -42,6 +44,17 @@ interface CourseFormData {
   active: boolean;
   image: string;
   description: string;
+}
+
+interface InstructorFormData {
+  name: string;
+  role: string;
+  credentials: string;
+  bio: string;
+  image: string;
+  tags: string;
+  active: boolean;
+  displayOrder: number;
 }
 
 function matchesCourseFilter(course: Course, termFilter: string, search: string): boolean {
@@ -348,6 +361,159 @@ function useAdminRegistrations() {
   };
 }
 
+function useAdminInstructors() {
+  const [instructors, setInstructors] = useState<Instructor[]>([]);
+  const [loadingInstructors, setLoadingInstructors] = useState(true);
+  const [instructorSearch, setInstructorSearch] = useState("");
+  const [editingInstructor, setEditingInstructor] = useState<Instructor | null>(null);
+  const [isCreatingInstructor, setIsCreatingInstructor] = useState(false);
+  const [deleteInstructorId, setDeleteInstructorId] = useState<string | null>(null);
+
+  const [instructorForm, setInstructorForm] = useState<InstructorFormData>({
+    name: "",
+    role: "",
+    credentials: "",
+    bio: "",
+    image: "",
+    tags: "",
+    active: true,
+    displayOrder: 0,
+  });
+
+  const loadInstructors = useCallback(async () => {
+    setLoadingInstructors(true);
+    try {
+      const res = await fetch("/api/instructors?all=true");
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setInstructors(data);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load instructors:", err);
+    } finally {
+      setLoadingInstructors(false);
+    }
+  }, []);
+
+  const openEditInstructor = (inst: Instructor) => {
+    setEditingInstructor(inst);
+    setInstructorForm({
+      name: inst.name,
+      role: inst.role,
+      credentials: inst.credentials || "",
+      bio: inst.bio || "",
+      image: inst.image || "",
+      tags: inst.tags ? inst.tags.join(", ") : "",
+      active: inst.active,
+      displayOrder: inst.displayOrder || 0,
+    });
+  };
+
+  const openCreateInstructor = () => {
+    setIsCreatingInstructor(true);
+    setInstructorForm({
+      name: "",
+      role: "",
+      credentials: "",
+      bio: "",
+      image:
+        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+      tags: "AMC 8/10/12, Geometry",
+      active: true,
+      displayOrder: instructors.length + 1,
+    });
+  };
+
+  const handleSaveInstructor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const tagsArray = instructorForm.tags
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
+
+    const payload = {
+      ...instructorForm,
+      tags: tagsArray,
+    };
+
+    try {
+      if (editingInstructor) {
+        const res = await fetch(`/api/instructors/${editingInstructor.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error("Failed to update instructor");
+      } else {
+        const res = await fetch("/api/instructors", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error("Failed to create instructor");
+      }
+
+      setEditingInstructor(null);
+      setIsCreatingInstructor(false);
+      await loadInstructors();
+    } catch (err: any) {
+      alert(err.message || "Failed to save instructor");
+    }
+  };
+
+  const toggleInstructorActive = async (inst: Instructor) => {
+    try {
+      const res = await fetch(`/api/instructors/${inst.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ active: !inst.active }),
+      });
+      if (res.ok) {
+        await loadInstructors();
+      }
+    } catch (err) {
+      console.error("Failed to toggle instructor active state:", err);
+    }
+  };
+
+  const handleDeleteInstructor = async (id: string) => {
+    try {
+      const res = await fetch(`/api/instructors/${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setDeleteInstructorId(null);
+        await loadInstructors();
+      }
+    } catch (err) {
+      console.error("Failed to delete instructor:", err);
+    }
+  };
+
+  return {
+    instructors,
+    loadingInstructors,
+    instructorSearch,
+    setInstructorSearch,
+    editingInstructor,
+    setEditingInstructor,
+    isCreatingInstructor,
+    setIsCreatingInstructor,
+    deleteInstructorId,
+    setDeleteInstructorId,
+    instructorForm,
+    setInstructorForm,
+    loadInstructors,
+    openEditInstructor,
+    openCreateInstructor,
+    handleSaveInstructor,
+    toggleInstructorActive,
+    handleDeleteInstructor,
+  };
+}
+
 function AdminTopHeader({ onLogout }: { onLogout: () => void }) {
   return (
     <header className="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30">
@@ -397,14 +563,16 @@ function AdminMetricsCards({
   registrations,
   totalTuitionSum,
   activeTerm,
+  instructors,
 }: {
   courses: Course[];
   registrations: Registration[];
   totalTuitionSum: number;
   activeTerm: string;
+  instructors: Instructor[];
 }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
       <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-1">
         <div className="flex items-center justify-between text-xs font-black uppercase tracking-wider text-slate-400">
           <span>Total Courses</span>
@@ -413,6 +581,17 @@ function AdminMetricsCards({
         <div className="text-2xl font-black text-slate-900">{courses.length}</div>
         <p className="text-xs text-slate-500">
           {courses.filter((c) => c.active).length} currently active on website
+        </p>
+      </div>
+
+      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-1">
+        <div className="flex items-center justify-between text-xs font-black uppercase tracking-wider text-slate-400">
+          <span>Faculty &amp; Mentors</span>
+          <GraduationCap className="w-4 h-4 text-indigo-500" />
+        </div>
+        <div className="text-2xl font-black text-slate-900">{instructors.length}</div>
+        <p className="text-xs text-slate-500">
+          {instructors.filter((i) => i.active).length} active on public website
         </p>
       </div>
 
@@ -1734,11 +1913,669 @@ function DeleteConfirmModal({
   );
 }
 
+function InstructorsTabSection({
+  instructors,
+  loadingInstructors,
+  instructorSearch,
+  setInstructorSearch,
+  openCreateInstructor,
+  openEditInstructor,
+  toggleActive,
+  onDeleteInstructor,
+}: {
+  instructors: Instructor[];
+  loadingInstructors: boolean;
+  instructorSearch: string;
+  setInstructorSearch: (val: string) => void;
+  openCreateInstructor: () => void;
+  openEditInstructor: (inst: Instructor) => void;
+  toggleActive: (inst: Instructor) => void;
+  onDeleteInstructor: (id: string) => void;
+}) {
+  const filteredInstructors = instructors.filter((inst) => {
+    const q = instructorSearch.trim().toLowerCase();
+    if (!q) return true;
+    const inName = inst.name.toLowerCase().includes(q);
+    const inRole = inst.role.toLowerCase().includes(q);
+    const inCreds = (inst.credentials || "").toLowerCase().includes(q);
+    const inTags = (inst.tags || []).some((t) => t.toLowerCase().includes(q));
+    return inName || inRole || inCreds || inTags;
+  });
+
+  return (
+    <div className="space-y-6">
+      {/* Top Banner & Actions */}
+      <div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-2 max-w-xl">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold uppercase tracking-wider border border-emerald-500/30">
+            <GraduationCap className="w-3.5 h-3.5" />
+            <span>Faculty Management</span>
+          </div>
+          <h2 className="text-2xl font-black tracking-tight">Instructors &amp; Mentors</h2>
+          <p className="text-xs text-slate-300 leading-relaxed">
+            Manage your faculty profiles. Active instructors appear dynamically in the &ldquo;Get to
+            Know Our Instructors&rdquo; section on the homepage and across course pages.
+          </p>
+        </div>
+
+        <button
+          onClick={openCreateInstructor}
+          className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl font-bold text-xs text-white bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-600/30 transition-all cursor-pointer shrink-0"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Add New Instructor</span>
+        </button>
+      </div>
+
+      {/* Search & Counter Bar */}
+      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="relative w-full sm:w-80">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            aria-label="Filter instructors by name, title, or specialties"
+            placeholder="Search instructors by name, title, or tags..."
+            value={instructorSearch}
+            onChange={(e) => setInstructorSearch(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div className="text-xs font-bold text-slate-500 flex items-center gap-2">
+          <span>
+            Showing <strong className="text-slate-900">{filteredInstructors.length}</strong> of{" "}
+            {instructors.length} instructors
+          </span>
+          <span className="text-slate-300">•</span>
+          <span className="text-emerald-600 font-bold">
+            {instructors.filter((i) => i.active).length} public
+          </span>
+        </div>
+      </div>
+
+      {/* Instructors Grid */}
+      {loadingInstructors ? (
+        <div className="p-12 text-center text-slate-400 text-xs bg-white rounded-2xl border border-slate-200">
+          Loading faculty profiles...
+        </div>
+      ) : filteredInstructors.length === 0 ? (
+        <div className="p-12 text-center bg-white rounded-2xl border border-slate-200 space-y-3">
+          <GraduationCap className="w-10 h-10 text-slate-300 mx-auto" />
+          <p className="text-sm font-bold text-slate-700">No instructors match your search</p>
+          <p className="text-xs text-slate-400">
+            Try adjusting your search terms or add a new faculty member.
+          </p>
+          <button
+            onClick={openCreateInstructor}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 cursor-pointer shadow-sm"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Add Instructor</span>
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredInstructors.map((inst) => (
+            <div
+              key={inst.id}
+              className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col justify-between shadow-xs hover:shadow-md transition-all space-y-4"
+            >
+              <div className="space-y-4">
+                {/* Header with Photo, Name & Active Badge */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3.5">
+                    <div className="relative w-14 h-14 shrink-0 rounded-2xl overflow-hidden border-2 border-slate-100 bg-slate-100 shadow-xs flex items-center justify-center">
+                      {inst.image ? (
+                        <Image
+                          src={inst.image}
+                          alt={inst.name}
+                          fill
+                          sizes="56px"
+                          unoptimized
+                          className="object-cover"
+                        />
+                      ) : (
+                        <User className="w-7 h-7 text-slate-400" />
+                      )}
+                    </div>
+                    <div>
+                      <h4 className="font-black text-slate-900 text-base leading-tight">
+                        {inst.name}
+                      </h4>
+                      <p className="text-xs font-bold text-rose-600 mt-0.5">{inst.role}</p>
+                      {inst.credentials && (
+                        <p className="text-[11px] text-slate-500 line-clamp-1">
+                          {inst.credentials}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => toggleActive(inst)}
+                    title={inst.active ? "Click to deactivate" : "Click to activate"}
+                    className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer border ${
+                      inst.active
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                        : "bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200"
+                    }`}
+                  >
+                    {inst.active ? "Active" : "Hidden"}
+                  </button>
+                </div>
+
+                {/* Bio */}
+                <p className="text-xs text-slate-600 leading-relaxed line-clamp-3">
+                  {inst.bio || "No biography provided."}
+                </p>
+
+                {/* Tags */}
+                {inst.tags && inst.tags.length > 0 && (
+                  <div className="pt-2 border-t border-slate-100 flex flex-wrap gap-1.5">
+                    {inst.tags.map((tag, tIdx) => (
+                      <span
+                        key={tIdx}
+                        className="inline-flex items-center gap-1 text-[10px] font-semibold bg-slate-50 text-slate-700 border border-slate-200 px-2 py-0.5 rounded-md"
+                      >
+                        <CheckCircle className="w-3 h-3 text-emerald-500" />
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Card Footer: Priority Order & Action Buttons */}
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-400">
+                  Order: #{inst.displayOrder}
+                </span>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => openEditInstructor(inst)}
+                    className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 transition-colors cursor-pointer"
+                    title="Edit Instructor Profile"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => onDeleteInstructor(inst.id)}
+                    className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50 transition-colors cursor-pointer"
+                    title="Delete Instructor"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InstructorFormModal({
+  editingInstructor,
+  instructorForm,
+  setInstructorForm,
+  onClose,
+  onSaveInstructor,
+}: {
+  editingInstructor: Instructor | null;
+  instructorForm: InstructorFormData;
+  setInstructorForm: React.Dispatch<React.SetStateAction<InstructorFormData>>;
+  onClose: () => void;
+  onSaveInstructor: (e: React.FormEvent) => void;
+}) {
+  const sampleAvatars = [
+    {
+      label: "Dr. Kanbir (Default)",
+      url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+    },
+    {
+      label: "Dr. Mansuri (Default)",
+      url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
+    },
+    {
+      label: "Prof. Vance (Default)",
+      url: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
+    },
+    {
+      label: "Educator Avatar 4",
+      url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80",
+    },
+  ];
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
+      <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-6 shadow-2xl my-8">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+              <GraduationCap className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-lg font-black text-slate-900">
+                {editingInstructor ? "Edit Instructor Profile" : "Add New Instructor"}
+              </h3>
+              <p className="text-xs text-slate-500">
+                Configure faculty profile details, credentials, and specialties.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={onClose}
+            aria-label="Close modal"
+            className="p-1 rounded-lg text-slate-400 hover:text-slate-700"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={onSaveInstructor} className="space-y-4 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="instFullName" className="block font-bold text-slate-700 mb-1">
+                Full Name *
+              </label>
+              <input
+                id="instFullName"
+                type="text"
+                required
+                placeholder="e.g. Dr. Sinan Kanbir"
+                value={instructorForm.name}
+                onChange={(e) => setInstructorForm({ ...instructorForm, name: e.target.value })}
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="instRole" className="block font-bold text-slate-700 mb-1">
+                Role / Title *
+              </label>
+              <input
+                id="instRole"
+                type="text"
+                required
+                placeholder="e.g. Senior Faculty & Algebra Specialist"
+                value={instructorForm.role}
+                onChange={(e) => setInstructorForm({ ...instructorForm, role: e.target.value })}
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="instCreds" className="block font-bold text-slate-700 mb-1">
+                Academic Credentials
+              </label>
+              <input
+                id="instCreds"
+                type="text"
+                placeholder="e.g. Ph.D. in Applied Mathematics"
+                value={instructorForm.credentials}
+                onChange={(e) =>
+                  setInstructorForm({ ...instructorForm, credentials: e.target.value })
+                }
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="instOrder" className="block font-bold text-slate-700 mb-1">
+                Display Priority Order
+              </label>
+              <input
+                id="instOrder"
+                type="number"
+                min="0"
+                value={instructorForm.displayOrder}
+                onChange={(e) =>
+                  setInstructorForm({
+                    ...instructorForm,
+                    displayOrder: parseInt(e.target.value) || 0,
+                  })
+                }
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <span className="text-[10px] text-slate-400">Lower numbers appear first</span>
+            </div>
+          </div>
+
+          {/* Photo URL & Live Preview */}
+          <div className="space-y-2">
+            <label htmlFor="instImage" className="block font-bold text-slate-700">
+              Photo Image URL
+            </label>
+            <div className="flex items-center gap-3">
+              <div className="relative w-14 h-14 shrink-0 rounded-2xl overflow-hidden border-2 border-slate-200 bg-slate-100 flex items-center justify-center">
+                {instructorForm.image ? (
+                  <Image
+                    src={instructorForm.image}
+                    alt="Preview"
+                    fill
+                    sizes="56px"
+                    unoptimized
+                    className="object-cover"
+                  />
+                ) : (
+                  <User className="w-7 h-7 text-slate-400" />
+                )}
+              </div>
+              <input
+                id="instImage"
+                type="text"
+                placeholder="https://images.unsplash.com/..."
+                value={instructorForm.image}
+                onChange={(e) => setInstructorForm({ ...instructorForm, image: e.target.value })}
+                className="flex-1 px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            {/* Avatar presets */}
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <span className="text-[11px] text-slate-400 font-medium">Quick samples:</span>
+              {sampleAvatars.map((s, idx) => (
+                <button
+                  type="button"
+                  key={idx}
+                  onClick={() => setInstructorForm({ ...instructorForm, image: s.url })}
+                  className="px-2 py-0.5 rounded-md border border-slate-200 text-[10px] text-slate-600 hover:bg-slate-100 hover:text-slate-900 cursor-pointer"
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Biography */}
+          <div>
+            <label htmlFor="instBio" className="block font-bold text-slate-700 mb-1">
+              Biography &amp; Background
+            </label>
+            <textarea
+              id="instBio"
+              rows={3}
+              placeholder="Summary of pedagogical background, Olympiad experience, or publications..."
+              value={instructorForm.bio}
+              onChange={(e) => setInstructorForm({ ...instructorForm, bio: e.target.value })}
+              className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Tags */}
+          <div>
+            <label htmlFor="instTags" className="block font-bold text-slate-700 mb-1">
+              Specialties &amp; Tags (comma-separated)
+            </label>
+            <input
+              id="instTags"
+              type="text"
+              placeholder="AMC 8/10/12, Olympiad Geometry, Algebra 1 & 2"
+              value={instructorForm.tags}
+              onChange={(e) => setInstructorForm({ ...instructorForm, tags: e.target.value })}
+              className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <span className="text-[10px] text-slate-400">
+              Each comma-separated item will be displayed as a feature tag badge.
+            </span>
+          </div>
+
+          {/* Active status */}
+          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="instructorActive"
+              checked={instructorForm.active}
+              onChange={(e) => setInstructorForm({ ...instructorForm, active: e.target.checked })}
+              className="w-4 h-4 text-blue-600 rounded cursor-pointer"
+            />
+            <label
+              htmlFor="instructorActive"
+              className="text-xs font-bold text-slate-700 cursor-pointer"
+            >
+              Active (Visible to public visitors on website)
+            </label>
+          </div>
+
+          {/* Form Actions */}
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-6 py-2.5 rounded-xl bg-blue-600 font-bold text-white hover:bg-blue-700 shadow-md cursor-pointer flex items-center gap-2"
+            >
+              <Save className="w-4 h-4" />
+              <span>{editingInstructor ? "Save Changes" : "Create Instructor"}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function DeleteInstructorModal({
+  instructor,
+  onCancel,
+  onConfirmDelete,
+}: {
+  instructor?: Instructor;
+  onCancel: () => void;
+  onConfirmDelete: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl text-center">
+        <AlertCircle className="w-10 h-10 text-rose-500 mx-auto" />
+        <h4 className="text-base font-black text-slate-900">Delete Instructor?</h4>
+        <p className="text-xs text-slate-500">
+          Are you sure you want to remove{" "}
+          <strong className="text-slate-800">{instructor?.name || "this instructor"}</strong>? They
+          will no longer appear in the faculty section of the website.
+        </p>
+        <div className="flex items-center justify-center gap-3 pt-2">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirmDelete}
+            className="px-4 py-2 rounded-xl bg-rose-600 text-xs font-bold text-white hover:bg-rose-700 shadow-md cursor-pointer"
+          >
+            Yes, Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AdminTabNavigation({
+  activeTab,
+  setActiveTab,
+  coursesCount,
+  instructorsCount,
+  registrationsCount,
+}: {
+  activeTab: "courses" | "registrations" | "countdown" | "instructors";
+  setActiveTab: (tab: "courses" | "registrations" | "countdown" | "instructors") => void;
+  coursesCount: number;
+  instructorsCount: number;
+  registrationsCount: number;
+}) {
+  return (
+    <div className="border-b border-slate-200 flex items-center gap-4 flex-wrap">
+      <button
+        onClick={() => setActiveTab("courses")}
+        className={`pb-3 text-sm font-black transition-all cursor-pointer border-b-2 flex items-center gap-2 ${
+          activeTab === "courses"
+            ? "border-blue-600 text-blue-600"
+            : "border-transparent text-slate-500 hover:text-slate-800"
+        }`}
+      >
+        <BookOpen className="w-4 h-4" />
+        <span>Course Management ({coursesCount})</span>
+      </button>
+
+      <button
+        onClick={() => setActiveTab("instructors")}
+        className={`pb-3 text-sm font-black transition-all cursor-pointer border-b-2 flex items-center gap-2 ${
+          activeTab === "instructors"
+            ? "border-blue-600 text-blue-600"
+            : "border-transparent text-slate-500 hover:text-slate-800"
+        }`}
+      >
+        <GraduationCap className="w-4 h-4" />
+        <span>Instructors &amp; Faculty ({instructorsCount})</span>
+      </button>
+
+      <button
+        onClick={() => setActiveTab("registrations")}
+        className={`pb-3 text-sm font-black transition-all cursor-pointer border-b-2 flex items-center gap-2 ${
+          activeTab === "registrations"
+            ? "border-blue-600 text-blue-600"
+            : "border-transparent text-slate-500 hover:text-slate-800"
+        }`}
+      >
+        <Users className="w-4 h-4" />
+        <span>Student Registrations ({registrationsCount})</span>
+      </button>
+
+      <button
+        onClick={() => setActiveTab("countdown")}
+        className={`pb-3 text-sm font-black transition-all cursor-pointer border-b-2 flex items-center gap-2 ${
+          activeTab === "countdown"
+            ? "border-blue-600 text-blue-600"
+            : "border-transparent text-slate-500 hover:text-slate-800"
+        }`}
+      >
+        <Timer className="w-4 h-4" />
+        <span>Upcoming Term &amp; Countdown</span>
+      </button>
+    </div>
+  );
+}
+
+function AdminModalsContainer({
+  editingCourse,
+  isCreatingCourse,
+  courseForm,
+  setCourseForm,
+  setEditingCourse,
+  setIsCreatingCourse,
+  handleSaveCourse,
+  selectedReg,
+  setSelectedReg,
+  deleteConfirmId,
+  setDeleteConfirmId,
+  handleDeleteCourse,
+  editingInstructor,
+  isCreatingInstructor,
+  instructorForm,
+  setInstructorForm,
+  setEditingInstructor,
+  setIsCreatingInstructor,
+  handleSaveInstructor,
+  deleteInstructorId,
+  setDeleteInstructorId,
+  handleDeleteInstructor,
+  instructors,
+}: {
+  editingCourse: Course | null;
+  isCreatingCourse: boolean;
+  courseForm: CourseFormData;
+  setCourseForm: React.Dispatch<React.SetStateAction<CourseFormData>>;
+  setEditingCourse: (c: Course | null) => void;
+  setIsCreatingCourse: (b: boolean) => void;
+  handleSaveCourse: (e: React.FormEvent) => void;
+  selectedReg: Registration | null;
+  setSelectedReg: (r: Registration | null) => void;
+  deleteConfirmId: string | null;
+  setDeleteConfirmId: (id: string | null) => void;
+  handleDeleteCourse: (id: string) => void;
+  editingInstructor: Instructor | null;
+  isCreatingInstructor: boolean;
+  instructorForm: InstructorFormData;
+  setInstructorForm: React.Dispatch<React.SetStateAction<InstructorFormData>>;
+  setEditingInstructor: (i: Instructor | null) => void;
+  setIsCreatingInstructor: (b: boolean) => void;
+  handleSaveInstructor: (e: React.FormEvent) => void;
+  deleteInstructorId: string | null;
+  setDeleteInstructorId: (id: string | null) => void;
+  handleDeleteInstructor: (id: string) => void;
+  instructors: Instructor[];
+}) {
+  return (
+    <>
+      {(editingCourse || isCreatingCourse) && (
+        <CourseFormModal
+          editingCourse={editingCourse}
+          courseForm={courseForm}
+          setCourseForm={setCourseForm}
+          onClose={() => {
+            setEditingCourse(null);
+            setIsCreatingCourse(false);
+          }}
+          onSaveCourse={handleSaveCourse}
+        />
+      )}
+
+      {selectedReg && (
+        <RegistrationDetailsModal selectedReg={selectedReg} onClose={() => setSelectedReg(null)} />
+      )}
+
+      {deleteConfirmId && (
+        <DeleteConfirmModal
+          deleteConfirmId={deleteConfirmId}
+          onCancel={() => setDeleteConfirmId(null)}
+          onConfirmDelete={handleDeleteCourse}
+        />
+      )}
+
+      {(editingInstructor || isCreatingInstructor) && (
+        <InstructorFormModal
+          editingInstructor={editingInstructor}
+          instructorForm={instructorForm}
+          setInstructorForm={setInstructorForm}
+          onClose={() => {
+            setEditingInstructor(null);
+            setIsCreatingInstructor(false);
+          }}
+          onSaveInstructor={handleSaveInstructor}
+        />
+      )}
+
+      {deleteInstructorId && (
+        <DeleteInstructorModal
+          instructor={instructors.find((i) => i.id === deleteInstructorId)}
+          onCancel={() => setDeleteInstructorId(null)}
+          onConfirmDelete={() => handleDeleteInstructor(deleteInstructorId)}
+        />
+      )}
+    </>
+  );
+}
+
 export default function AdminDashboardPage() {
   const router = useRouter();
 
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
-  const [activeTab, setActiveTab] = useState<"courses" | "registrations" | "countdown">("courses");
+  const [activeTab, setActiveTab] = useState<
+    "courses" | "registrations" | "countdown" | "instructors"
+  >("courses");
 
   const {
     settings,
@@ -1784,6 +2621,27 @@ export default function AdminDashboardPage() {
     handleUpdateRegStatus,
   } = useAdminRegistrations();
 
+  const {
+    instructors,
+    loadingInstructors,
+    instructorSearch,
+    setInstructorSearch,
+    editingInstructor,
+    setEditingInstructor,
+    isCreatingInstructor,
+    setIsCreatingInstructor,
+    deleteInstructorId,
+    setDeleteInstructorId,
+    instructorForm,
+    setInstructorForm,
+    loadInstructors,
+    openEditInstructor,
+    openCreateInstructor,
+    handleSaveInstructor,
+    toggleInstructorActive,
+    handleDeleteInstructor,
+  } = useAdminInstructors();
+
   // Verify Admin Session on mount and fetch initial data
   useEffect(() => {
     async function init() {
@@ -1797,12 +2655,13 @@ export default function AdminDashboardPage() {
         loadSettings();
         loadCourses();
         loadRegistrations();
+        loadInstructors();
       } catch {
         router.push("/admin/login");
       }
     }
     init();
-  }, [router, loadSettings, loadCourses, loadRegistrations]);
+  }, [router, loadSettings, loadCourses, loadRegistrations, loadInstructors]);
 
   const handleLogout = async () => {
     await fetch("/api/admin/logout", { method: "POST" });
@@ -1833,46 +2692,17 @@ export default function AdminDashboardPage() {
           registrations={registrations}
           totalTuitionSum={totalTuitionSum}
           activeTerm={activeTerm}
+          instructors={instructors}
         />
 
         {/* Tab Navigation */}
-        <div className="border-b border-slate-200 flex items-center gap-4 flex-wrap">
-          <button
-            onClick={() => setActiveTab("courses")}
-            className={`pb-3 text-sm font-black transition-all cursor-pointer border-b-2 flex items-center gap-2 ${
-              activeTab === "courses"
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-slate-500 hover:text-slate-800"
-            }`}
-          >
-            <BookOpen className="w-4 h-4" />
-            <span>Course Management ({courses.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("registrations")}
-            className={`pb-3 text-sm font-black transition-all cursor-pointer border-b-2 flex items-center gap-2 ${
-              activeTab === "registrations"
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-slate-500 hover:text-slate-800"
-            }`}
-          >
-            <Users className="w-4 h-4" />
-            <span>Student Registrations ({registrations.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("countdown")}
-            className={`pb-3 text-sm font-black transition-all cursor-pointer border-b-2 flex items-center gap-2 ${
-              activeTab === "countdown"
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-slate-500 hover:text-slate-800"
-            }`}
-          >
-            <Timer className="w-4 h-4" />
-            <span>Upcoming Term &amp; Countdown</span>
-          </button>
-        </div>
+        <AdminTabNavigation
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          coursesCount={courses.length}
+          instructorsCount={instructors.length}
+          registrationsCount={registrations.length}
+        />
 
         {/* TAB 1: COURSES MANAGEMENT */}
         {activeTab === "courses" && (
@@ -1917,35 +2747,48 @@ export default function AdminDashboardPage() {
             onSaveSettings={handleUpdateSettings}
           />
         )}
+
+        {/* TAB 4: INSTRUCTORS & FACULTY MANAGEMENT */}
+        {activeTab === "instructors" && (
+          <InstructorsTabSection
+            instructors={instructors}
+            loadingInstructors={loadingInstructors}
+            instructorSearch={instructorSearch}
+            setInstructorSearch={setInstructorSearch}
+            openCreateInstructor={openCreateInstructor}
+            openEditInstructor={openEditInstructor}
+            toggleActive={toggleInstructorActive}
+            onDeleteInstructor={(id) => setDeleteInstructorId(id)}
+          />
+        )}
       </main>
 
-      {/* COURSE CREATE / EDIT MODAL */}
-      {(editingCourse || isCreatingCourse) && (
-        <CourseFormModal
-          editingCourse={editingCourse}
-          courseForm={courseForm}
-          setCourseForm={setCourseForm}
-          onClose={() => {
-            setEditingCourse(null);
-            setIsCreatingCourse(false);
-          }}
-          onSaveCourse={handleSaveCourse}
-        />
-      )}
-
-      {/* REGISTRATION DETAILS MODAL */}
-      {selectedReg && (
-        <RegistrationDetailsModal selectedReg={selectedReg} onClose={() => setSelectedReg(null)} />
-      )}
-
-      {/* DELETE CONFIRMATION MODAL */}
-      {deleteConfirmId && (
-        <DeleteConfirmModal
-          deleteConfirmId={deleteConfirmId}
-          onCancel={() => setDeleteConfirmId(null)}
-          onConfirmDelete={handleDeleteCourse}
-        />
-      )}
+      {/* DASHBOARD MODALS CONTAINER */}
+      <AdminModalsContainer
+        editingCourse={editingCourse}
+        isCreatingCourse={isCreatingCourse}
+        courseForm={courseForm}
+        setCourseForm={setCourseForm}
+        setEditingCourse={setEditingCourse}
+        setIsCreatingCourse={setIsCreatingCourse}
+        handleSaveCourse={handleSaveCourse}
+        selectedReg={selectedReg}
+        setSelectedReg={setSelectedReg}
+        deleteConfirmId={deleteConfirmId}
+        setDeleteConfirmId={setDeleteConfirmId}
+        handleDeleteCourse={handleDeleteCourse}
+        editingInstructor={editingInstructor}
+        isCreatingInstructor={isCreatingInstructor}
+        instructorForm={instructorForm}
+        setInstructorForm={setInstructorForm}
+        setEditingInstructor={setEditingInstructor}
+        setIsCreatingInstructor={setIsCreatingInstructor}
+        handleSaveInstructor={handleSaveInstructor}
+        deleteInstructorId={deleteInstructorId}
+        setDeleteInstructorId={setDeleteInstructorId}
+        handleDeleteInstructor={handleDeleteInstructor}
+        instructors={instructors}
+      />
     </div>
   );
 }

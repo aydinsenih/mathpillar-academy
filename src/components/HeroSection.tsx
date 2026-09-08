@@ -33,9 +33,9 @@ export default function HeroSection() {
           </h1>
 
           <p className="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed font-normal">
-            All MathPillar courses are strictly in-person with hands-on chalkboard problem
-            solving. From foundational fluency to honors geometry proofs and AMC contest prep,
-            students collaborate face-to-face with expert faculty.
+            All MathPillar courses are strictly in-person with hands-on chalkboard problem solving.
+            From foundational fluency to honors geometry proofs and AMC contest prep, students
+            collaborate face-to-face with expert faculty.
           </p>
 
           {/* Value Checkpoints */}

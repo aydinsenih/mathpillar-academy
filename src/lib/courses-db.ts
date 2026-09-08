@@ -62,6 +62,19 @@ export interface AppSettings {
   countdownTargetDate: string;
 }
 
+export interface Instructor {
+  id: string;
+  name: string;
+  role: string;
+  credentials: string;
+  bio: string;
+  image: string;
+  tags: string[];
+  active: boolean;
+  displayOrder: number;
+  createdAt?: string;
+}
+
 interface CourseRow {
   id: string;
   title: string;
@@ -121,6 +134,41 @@ function mapRegistration(row: RegistrationRow): Registration {
     totalPrice: row.totalPrice,
     paymentMethod: row.paymentMethod,
     status: row.status,
+  };
+}
+
+interface InstructorRow {
+  id: string;
+  name: string;
+  role: string;
+  credentials: string;
+  bio: string;
+  image: string;
+  tags: string;
+  active: number;
+  displayOrder: number;
+  createdAt: string;
+}
+
+function mapInstructor(row: InstructorRow): Instructor {
+  let tags: string[] = [];
+  try {
+    tags = JSON.parse(row.tags);
+    if (!Array.isArray(tags)) tags = [];
+  } catch {
+    tags = [];
+  }
+  return {
+    id: row.id,
+    name: row.name,
+    role: row.role,
+    credentials: row.credentials,
+    bio: row.bio,
+    image: row.image,
+    tags,
+    active: Boolean(row.active),
+    displayOrder: row.displayOrder,
+    createdAt: row.createdAt,
   };
 }
 
@@ -380,6 +428,112 @@ export async function createRegistration(
   });
 
   return newReg;
+}
+
+// --- Instructors Operations ---
+
+export async function getInstructors(includeInactive = false): Promise<Instructor[]> {
+  const db = getDb();
+  let rows: InstructorRow[];
+  if (includeInactive) {
+    rows = db
+      .prepare("SELECT * FROM instructors ORDER BY displayOrder ASC, createdAt ASC")
+      .all() as InstructorRow[];
+  } else {
+    rows = db
+      .prepare(
+        "SELECT * FROM instructors WHERE active = 1 ORDER BY displayOrder ASC, createdAt ASC",
+      )
+      .all() as InstructorRow[];
+  }
+  return rows.map(mapInstructor);
+}
+
+export async function getInstructorById(id: string): Promise<Instructor | undefined> {
+  const db = getDb();
+  const row = db.prepare("SELECT * FROM instructors WHERE id = ?").get(id) as
+    | InstructorRow
+    | undefined;
+  return row ? mapInstructor(row) : undefined;
+}
+
+export async function createInstructor(
+  data: Omit<Instructor, "id" | "createdAt"> & { id?: string },
+): Promise<Instructor> {
+  const db = getDb();
+  const id = data.id || `inst-${Date.now().toString().slice(-6)}`;
+  const createdAt = new Date().toISOString();
+  const instructor: Instructor = {
+    ...data,
+    id,
+    active: data.active !== undefined ? data.active : true,
+    displayOrder: data.displayOrder ?? 0,
+    createdAt,
+  };
+
+  db.prepare(`
+    INSERT INTO instructors (id, name, role, credentials, bio, image, tags, active, displayOrder, createdAt)
+    VALUES (@id, @name, @role, @credentials, @bio, @image, @tags, @active, @displayOrder, @createdAt)
+  `).run({
+    id: instructor.id,
+    name: instructor.name,
+    role: instructor.role,
+    credentials: instructor.credentials || "",
+    bio: instructor.bio || "",
+    image: instructor.image || "",
+    tags: JSON.stringify(instructor.tags || []),
+    active: instructor.active ? 1 : 0,
+    displayOrder: instructor.displayOrder,
+    createdAt: instructor.createdAt,
+  });
+
+  return instructor;
+}
+
+export async function updateInstructor(
+  id: string,
+  updates: Partial<Instructor>,
+): Promise<Instructor | null> {
+  const existing = await getInstructorById(id);
+  if (!existing) return null;
+
+  const db = getDb();
+  const merged: Instructor = {
+    ...existing,
+    ...updates,
+    id,
+  };
+
+  db.prepare(`
+    UPDATE instructors SET
+      name = @name,
+      role = @role,
+      credentials = @credentials,
+      bio = @bio,
+      image = @image,
+      tags = @tags,
+      active = @active,
+      displayOrder = @displayOrder
+    WHERE id = @id
+  `).run({
+    id: merged.id,
+    name: merged.name,
+    role: merged.role,
+    credentials: merged.credentials || "",
+    bio: merged.bio || "",
+    image: merged.image || "",
+    tags: JSON.stringify(merged.tags || []),
+    active: merged.active ? 1 : 0,
+    displayOrder: merged.displayOrder,
+  });
+
+  return merged;
+}
+
+export async function deleteInstructor(id: string): Promise<boolean> {
+  const db = getDb();
+  const info = db.prepare("DELETE FROM instructors WHERE id = ?").run(id);
+  return info.changes > 0;
 }
 
 // --- Auth Utilities ---

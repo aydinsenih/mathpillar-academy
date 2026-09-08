@@ -9,14 +9,17 @@ import SpotlightCourseBanner from "@/components/SpotlightCourseBanner";
 import WhyUsSection from "@/components/WhyUsSection";
 import InstructorsSection from "@/components/InstructorsSection";
 import QuestionsBanner from "@/components/QuestionsBanner";
-import { getCourses, getSettings } from "@/lib/courses-db";
+import { getCourses, getSettings, getInstructors } from "@/lib/courses-db";
 import { ArrowRight, BookOpen } from "lucide-react";
 
 export const revalidate = 0; // Fresh dynamic data on every request
 
 export default async function HomePage() {
-  const allCourses = await getCourses();
-  const settings = await getSettings();
+  const [allCourses, settings, instructors] = await Promise.all([
+    getCourses(),
+    getSettings(),
+    getInstructors(),
+  ]);
   const activeTerm = settings.activeTerm;
   const activeCourses = allCourses.filter(
     (c) => c.active && c.term.toLowerCase() === activeTerm.toLowerCase(),
@@ -92,7 +95,7 @@ export default async function HomePage() {
         <WhyUsSection />
 
         {/* 7. Instructors Section */}
-        <InstructorsSection />
+        <InstructorsSection instructors={instructors} />
 
         {/* 9. Contact / Questions Banner */}
         <QuestionsBanner />

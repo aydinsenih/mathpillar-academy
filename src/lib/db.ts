@@ -55,10 +55,24 @@ function initDatabase(): Database.Database {
       paymentMethod TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'Pending'
     );
+
+    CREATE TABLE IF NOT EXISTS instructors (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      role TEXT NOT NULL,
+      credentials TEXT NOT NULL,
+      bio TEXT NOT NULL,
+      image TEXT NOT NULL,
+      tags TEXT NOT NULL,
+      active INTEGER NOT NULL DEFAULT 1,
+      displayOrder INTEGER NOT NULL DEFAULT 0,
+      createdAt TEXT NOT NULL
+    );
   `);
 
   seedSettingsIfEmpty(db);
   seedCoursesIfEmpty(db);
+  seedInstructorsIfEmpty(db);
 
   return db;
 }
@@ -102,6 +116,66 @@ function seedCoursesIfEmpty(db: Database.Database): void {
   });
 
   insertMany(DEFAULT_COURSES);
+}
+
+function seedInstructorsIfEmpty(db: Database.Database): void {
+  const row = db.prepare("SELECT COUNT(*) as count FROM instructors").get() as { count: number };
+  if (row.count > 0) return;
+
+  const defaultInstructors = [
+    {
+      id: "inst-sinan-kanbir",
+      name: "Dr. Sinan Kanbir",
+      role: "Lead Mathematics Instructor & Founder",
+      credentials: "Ph.D. in Mathematics Education",
+      bio: "Author of prominent competition math curricula and problem-solving books. Over 20 years of experience mentoring USAMO and AIME qualifiers with proof-centered instruction.",
+      image:
+        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+      tags: JSON.stringify(["AMC 8/10/12", "Olympiad Geometry", "Curriculum Author"]),
+      active: 1,
+      displayOrder: 1,
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: "inst-mansuri",
+      name: "Dr. Mansuri",
+      role: "Senior Faculty & Algebra Specialist",
+      credentials: "Ph.D. in Applied Mathematics",
+      bio: "Specialist in algebraic foundations, polynomial theory, and high school honors math curricula. Passionate about guiding middle schoolers through transition-to-algebra.",
+      image:
+        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
+      tags: JSON.stringify(["Algebra 1 & 2", "Integrated Math", "MathCounts Coach"]),
+      active: 1,
+      displayOrder: 2,
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: "inst-elena-vance",
+      name: "Prof. Elena Vance",
+      role: "Elementary Math Specialist",
+      credentials: "M.Ed. in STEM Curriculum & Instruction",
+      bio: "Dedicated to sparking curiosity in grades 4–6 through visual geometry, pattern recognition, and building unshakable number sense early.",
+      image:
+        "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
+      tags: JSON.stringify(["Grades 4-5", "Number Fluency", "Visual Math"]),
+      active: 1,
+      displayOrder: 3,
+      createdAt: new Date().toISOString(),
+    },
+  ];
+
+  const insert = db.prepare(`
+    INSERT INTO instructors (id, name, role, credentials, bio, image, tags, active, displayOrder, createdAt)
+    VALUES (@id, @name, @role, @credentials, @bio, @image, @tags, @active, @displayOrder, @createdAt)
+  `);
+
+  const insertMany = db.transaction((list: typeof defaultInstructors) => {
+    for (const inst of list) {
+      insert.run(inst);
+    }
+  });
+
+  insertMany(defaultInstructors);
 }
 
 export function getDb(): Database.Database {
