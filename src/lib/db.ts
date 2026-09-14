@@ -59,7 +59,9 @@ function initDatabase(): Database.Database {
       featured INTEGER NOT NULL DEFAULT 0,
       active INTEGER NOT NULL DEFAULT 1,
       image TEXT,
-      description TEXT NOT NULL
+      description TEXT NOT NULL,
+      detailedDescription TEXT,
+      curriculum TEXT
     );
 
     CREATE TABLE IF NOT EXISTS registrations (
@@ -89,8 +91,19 @@ function initDatabase(): Database.Database {
     );
   `);
 
+  // Migrate existing courses table if new columns are missing
+  const courseCols = db.pragma("table_info(courses)") as { name: string }[];
+  const colNames = new Set(courseCols.map((c) => c.name));
+  if (!colNames.has("detailedDescription")) {
+    db.exec("ALTER TABLE courses ADD COLUMN detailedDescription TEXT");
+  }
+  if (!colNames.has("curriculum")) {
+    db.exec("ALTER TABLE courses ADD COLUMN curriculum TEXT");
+  }
+
   seedSettingsIfEmpty(db);
   seedCoursesIfEmpty(db);
+  backfillCoursesIfMissingCurriculum(db);
   seedInstructorsIfEmpty(db);
 
   return db;
@@ -110,8 +123,8 @@ function seedCoursesIfEmpty(db: Database.Database): void {
   if (row.count > 0) return;
 
   const insertCourse = db.prepare(`
-    INSERT INTO courses (id, title, subtitle, term, grade, startDate, schedule, hours, price, featured, active, image, description)
-    VALUES (@id, @title, @subtitle, @term, @grade, @startDate, @schedule, @hours, @price, @featured, @active, @image, @description)
+    INSERT INTO courses (id, title, subtitle, term, grade, startDate, schedule, hours, price, featured, active, image, description, detailedDescription, curriculum)
+    VALUES (@id, @title, @subtitle, @term, @grade, @startDate, @schedule, @hours, @price, @featured, @active, @image, @description, @detailedDescription, @curriculum)
   `);
 
   const insertMany = db.transaction((courses: typeof DEFAULT_COURSES) => {
@@ -130,11 +143,36 @@ function seedCoursesIfEmpty(db: Database.Database): void {
         active: c.active ? 1 : 0,
         image: c.image || null,
         description: c.description,
+        detailedDescription: c.detailedDescription || c.description,
+        curriculum: c.curriculum ? JSON.stringify(c.curriculum) : JSON.stringify([]),
       });
     }
   });
 
   insertMany(DEFAULT_COURSES);
+}
+
+function backfillCoursesIfMissingCurriculum(db: Database.Database): void {
+  const updateStmt = db.prepare(`
+    UPDATE courses 
+    SET curriculum = @curriculum,
+        detailedDescription = CASE 
+          WHEN (detailedDescription IS NULL OR detailedDescription = '') 
+          THEN @detailedDescription 
+          ELSE detailedDescription 
+        END
+    WHERE id = @id AND (curriculum IS NULL OR curriculum = '' OR curriculum = '[]')
+  `);
+
+  for (const c of DEFAULT_COURSES) {
+    if (c.curriculum && c.curriculum.length > 0) {
+      updateStmt.run({
+        id: c.id,
+        curriculum: JSON.stringify(c.curriculum),
+        detailedDescription: c.detailedDescription || c.description,
+      });
+    }
+  }
 }
 
 function seedInstructorsIfEmpty(db: Database.Database): void {

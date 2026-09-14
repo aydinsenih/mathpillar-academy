@@ -1,5 +1,13 @@
 import { getDb } from "./db";
 
+export interface CurriculumItem {
+  id: string;
+  unit: string;
+  topic: string;
+  objectives: string;
+  hours?: string;
+}
+
 export interface Course {
   id: string;
   title: string;
@@ -14,6 +22,8 @@ export interface Course {
   active: boolean;
   image?: string;
   description: string;
+  detailedDescription?: string;
+  curriculum?: CurriculumItem[];
 }
 
 export interface StudentInfo {
@@ -89,6 +99,8 @@ interface CourseRow {
   active: number;
   image: string | null;
   description: string;
+  detailedDescription: string | null;
+  curriculum: string | null;
 }
 
 interface RegistrationRow {
@@ -105,6 +117,18 @@ interface RegistrationRow {
 }
 
 function mapCourse(row: CourseRow): Course {
+  let curriculum: CurriculumItem[] = [];
+  if (row.curriculum) {
+    try {
+      const parsed = JSON.parse(row.curriculum);
+      if (Array.isArray(parsed)) {
+        curriculum = parsed;
+      }
+    } catch {
+      curriculum = [];
+    }
+  }
+
   return {
     id: row.id,
     title: row.title,
@@ -119,6 +143,8 @@ function mapCourse(row: CourseRow): Course {
     active: Boolean(row.active),
     image: row.image ?? undefined,
     description: row.description,
+    detailedDescription: row.detailedDescription || row.description,
+    curriculum,
   };
 }
 
@@ -245,8 +271,8 @@ export async function getCourseById(id: string): Promise<Course | undefined> {
 export async function saveCourses(courses: Course[]): Promise<void> {
   const db = getDb();
   const upsert = db.prepare(`
-    INSERT INTO courses (id, title, subtitle, term, grade, startDate, schedule, hours, price, featured, active, image, description)
-    VALUES (@id, @title, @subtitle, @term, @grade, @startDate, @schedule, @hours, @price, @featured, @active, @image, @description)
+    INSERT INTO courses (id, title, subtitle, term, grade, startDate, schedule, hours, price, featured, active, image, description, detailedDescription, curriculum)
+    VALUES (@id, @title, @subtitle, @term, @grade, @startDate, @schedule, @hours, @price, @featured, @active, @image, @description, @detailedDescription, @curriculum)
     ON CONFLICT(id) DO UPDATE SET
       title = excluded.title,
       subtitle = excluded.subtitle,
@@ -259,7 +285,9 @@ export async function saveCourses(courses: Course[]): Promise<void> {
       featured = excluded.featured,
       active = excluded.active,
       image = excluded.image,
-      description = excluded.description
+      description = excluded.description,
+      detailedDescription = excluded.detailedDescription,
+      curriculum = excluded.curriculum
   `);
 
   const runAll = db.transaction((list: Course[]) => {
@@ -278,6 +306,8 @@ export async function saveCourses(courses: Course[]): Promise<void> {
         active: c.active !== false ? 1 : 0,
         image: c.image || null,
         description: c.description,
+        detailedDescription: c.detailedDescription || c.description,
+        curriculum: c.curriculum ? JSON.stringify(c.curriculum) : JSON.stringify([]),
       });
     }
   });
@@ -294,11 +324,13 @@ export async function createCourse(
     ...newCourse,
     id,
     active: newCourse.active !== undefined ? newCourse.active : true,
+    curriculum: newCourse.curriculum || [],
+    detailedDescription: newCourse.detailedDescription || newCourse.description,
   };
 
   db.prepare(`
-    INSERT INTO courses (id, title, subtitle, term, grade, startDate, schedule, hours, price, featured, active, image, description)
-    VALUES (@id, @title, @subtitle, @term, @grade, @startDate, @schedule, @hours, @price, @featured, @active, @image, @description)
+    INSERT INTO courses (id, title, subtitle, term, grade, startDate, schedule, hours, price, featured, active, image, description, detailedDescription, curriculum)
+    VALUES (@id, @title, @subtitle, @term, @grade, @startDate, @schedule, @hours, @price, @featured, @active, @image, @description, @detailedDescription, @curriculum)
   `).run({
     id: course.id,
     title: course.title,
@@ -313,6 +345,8 @@ export async function createCourse(
     active: course.active ? 1 : 0,
     image: course.image || null,
     description: course.description,
+    detailedDescription: course.detailedDescription || course.description,
+    curriculum: JSON.stringify(course.curriculum || []),
   });
 
   return course;
@@ -342,7 +376,9 @@ export async function updateCourse(id: string, updates: Partial<Course>): Promis
       featured = @featured,
       active = @active,
       image = @image,
-      description = @description
+      description = @description,
+      detailedDescription = @detailedDescription,
+      curriculum = @curriculum
     WHERE id = @id
   `).run({
     id: merged.id,
@@ -358,6 +394,8 @@ export async function updateCourse(id: string, updates: Partial<Course>): Promis
     active: merged.active ? 1 : 0,
     image: merged.image || null,
     description: merged.description,
+    detailedDescription: merged.detailedDescription || merged.description,
+    curriculum: JSON.stringify(merged.curriculum || []),
   });
 
   return merged;

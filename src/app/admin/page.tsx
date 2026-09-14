@@ -5,7 +5,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import CoursesCountdown, { parsePDTTimestamp } from "@/components/CoursesCountdown";
-import type { Course, Registration, AppSettings, Instructor } from "@/lib/courses-db";
+import type {
+  Course,
+  Registration,
+  AppSettings,
+  Instructor,
+  CurriculumItem,
+} from "@/lib/courses-db";
 import {
   BookOpen,
   Users,
@@ -29,6 +35,9 @@ import {
   Save,
   GraduationCap,
   User,
+  ArrowUp,
+  ArrowDown,
+  Layers,
 } from "lucide-react";
 
 interface CourseFormData {
@@ -44,6 +53,8 @@ interface CourseFormData {
   active: boolean;
   image: string;
   description: string;
+  detailedDescription: string;
+  curriculum: CurriculumItem[];
 }
 
 interface InstructorFormData {
@@ -179,6 +190,8 @@ function useAdminCourses() {
     active: true,
     image: "",
     description: "",
+    detailedDescription: "",
+    curriculum: [],
   });
 
   const loadCourses = useCallback(async () => {
@@ -211,6 +224,8 @@ function useAdminCourses() {
       active: course.active,
       image: course.image || "",
       description: course.description,
+      detailedDescription: course.detailedDescription || course.description,
+      curriculum: course.curriculum ? JSON.parse(JSON.stringify(course.curriculum)) : [],
     });
   };
 
@@ -230,6 +245,23 @@ function useAdminCourses() {
       image:
         "https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=600&q=80",
       description: "",
+      detailedDescription: "",
+      curriculum: [
+        {
+          id: `c-w1-${Date.now()}`,
+          unit: "Week 1",
+          topic: "Foundations & Diagnostic Boardwork",
+          objectives: "Core concept review and foundational problem solving.",
+          hours: "2.5 hrs",
+        },
+        {
+          id: `c-w2-${Date.now()}`,
+          unit: "Week 2",
+          topic: "Algebraic Tactics & Problem Synthesis",
+          objectives: "Proof techniques and structured problem solving sets.",
+          hours: "2.5 hrs",
+        },
+      ],
     });
   };
 
@@ -859,7 +891,18 @@ function CoursesTable({
                   </td>
 
                   <td className="py-4 px-4 text-right">
-                    <div className="inline-flex items-center gap-2">
+                    <div className="inline-flex items-center gap-1.5">
+                      <a
+                        href={`/courses/${course.id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label={`View public details page for ${course.title}`}
+                        title="View Public Details Page"
+                        className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-blue-600 transition-colors"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+
                       <button
                         onClick={() => onEditCourse(course)}
                         aria-label={`Edit ${course.title}`}
@@ -1546,6 +1589,446 @@ function RegistrationsTable({
   );
 }
 
+function CurriculumTableEditor({
+  curriculum,
+  onChange,
+}: {
+  curriculum: CurriculumItem[];
+  onChange: (curriculum: CurriculumItem[]) => void;
+}) {
+  const addRow = () => {
+    const nextIndex = curriculum.length + 1;
+    onChange([
+      ...curriculum,
+      {
+        id: `cur-${Date.now()}`,
+        unit: `Week ${nextIndex}`,
+        topic: "",
+        objectives: "",
+        hours: "2.5 hrs",
+      },
+    ]);
+  };
+
+  const updateRow = (index: number, field: keyof CurriculumItem, value: string) => {
+    const updated = [...curriculum];
+    updated[index] = { ...updated[index], [field]: value };
+    onChange(updated);
+  };
+
+  const removeRow = (index: number) => {
+    onChange(curriculum.filter((_, i) => i !== index));
+  };
+
+  const moveRow = (index: number, direction: "up" | "down") => {
+    const newIndex = direction === "up" ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= curriculum.length) return;
+    const updated = [...curriculum];
+    const temp = updated[index];
+    updated[index] = updated[newIndex];
+    updated[newIndex] = temp;
+    onChange(updated);
+  };
+
+  const loadTemplate = () => {
+    onChange([
+      {
+        id: `c-w1-${Date.now()}`,
+        unit: "Week 1",
+        topic: "Foundations, Axioms & Diagnostic Boardwork",
+        objectives: "Core definition review, baseline assessment, and guided deduction proofs.",
+        hours: "2.5 hrs",
+      },
+      {
+        id: `c-w2-${Date.now()}`,
+        unit: "Week 2",
+        topic: "Core Tactics, Proof Structures & Angle Chasing",
+        objectives: "Multi-step angle calculations, transversal properties, and auxiliary lines.",
+        hours: "2.5 hrs",
+      },
+      {
+        id: `c-w3-${Date.now()}`,
+        unit: "Week 3",
+        topic: "Congruence, Symmetry & Problem Set Synthesis",
+        objectives: "Proof frameworks (SAS, ASA, SSS), CPCTC applications, and blackboard labs.",
+        hours: "2.5 hrs",
+      },
+      {
+        id: `c-w4-${Date.now()}`,
+        unit: "Week 4",
+        topic: "Contest Problem Strategies & Non-Routine Challenges",
+        objectives: "Time-management tactics, contest shortcuts, and avoiding algebraic pitfalls.",
+        hours: "2.5 hrs",
+      },
+      {
+        id: `c-w5-${Date.now()}`,
+        unit: "Week 5",
+        topic: "Advanced Problem Clinic & Cooperative Labs",
+        objectives:
+          "Collaborative student boardwork, Olympiad challenge sets, and instructor clinics.",
+        hours: "2.5 hrs",
+      },
+      {
+        id: `c-w6-${Date.now()}`,
+        unit: "Week 6",
+        topic: "Term Capstone & Timed Mini-Mock Exam Clinic",
+        objectives:
+          "Full term material synthesis, timed simulation exam, and comprehensive solution review.",
+        hours: "2.5 hrs",
+      },
+    ]);
+  };
+
+  return (
+    <div className="space-y-3 pt-4 border-t border-slate-100">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-blue-600" />
+            <h4 className="font-bold text-slate-900 text-sm uppercase">
+              Course Curriculum (Table View)
+            </h4>
+            <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-bold text-[11px]">
+              {curriculum.length} {curriculum.length === 1 ? "Session" : "Sessions"}
+            </span>
+          </div>
+          <p className="text-[11px] text-slate-500 mt-0.5">
+            The sessions below render as a table view on the public course details page.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {curriculum.length === 0 && (
+            <button
+              type="button"
+              onClick={loadTemplate}
+              className="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 font-bold text-xs cursor-pointer"
+            >
+              Load 6-Week Template
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={addRow}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs border border-blue-200 cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Add Session / Week</span>
+          </button>
+        </div>
+      </div>
+
+      {curriculum.length === 0 ? (
+        <div className="p-6 text-center bg-slate-50 border border-dashed border-slate-300 rounded-2xl space-y-2">
+          <p className="text-xs text-slate-600 font-medium">No curriculum modules added yet.</p>
+          <button
+            type="button"
+            onClick={loadTemplate}
+            className="text-xs font-bold text-blue-600 hover:text-blue-700 underline cursor-pointer"
+          >
+            Click here to populate with a 6-week curriculum template
+          </button>
+        </div>
+      ) : (
+        <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
+          <div className="overflow-x-auto max-h-72 overflow-y-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead className="bg-slate-100 sticky top-0 z-10 text-slate-700 font-bold uppercase text-[10px] border-b border-slate-200">
+                <tr>
+                  <th scope="col" className="py-2.5 px-3 w-28">
+                    Session / Unit
+                  </th>
+                  <th scope="col" className="py-2.5 px-3 w-52">
+                    Topic Title
+                  </th>
+                  <th scope="col" className="py-2.5 px-3">
+                    Core Objectives & Concepts
+                  </th>
+                  <th scope="col" className="py-2.5 px-3 w-24">
+                    Hours
+                  </th>
+                  <th scope="col" className="py-2.5 px-3 w-24 text-right">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 bg-white">
+                {curriculum.map((item, idx) => (
+                  <tr key={item.id || idx} className="hover:bg-slate-50/70">
+                    <td className="py-2 px-3 align-top">
+                      <input
+                        type="text"
+                        aria-label={`Session label for row ${idx + 1}`}
+                        value={item.unit}
+                        onChange={(e) => updateRow(idx, "unit", e.target.value)}
+                        placeholder="e.g. Week 1"
+                        className="w-full px-2 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                    </td>
+                    <td className="py-2 px-3 align-top">
+                      <input
+                        type="text"
+                        aria-label={`Topic title for row ${idx + 1}`}
+                        value={item.topic}
+                        onChange={(e) => updateRow(idx, "topic", e.target.value)}
+                        placeholder="e.g. Euclidean Proofs"
+                        className="w-full px-2 py-1.5 rounded-lg border border-slate-300 text-xs font-medium focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                    </td>
+                    <td className="py-2 px-3 align-top">
+                      <textarea
+                        rows={2}
+                        aria-label={`Core objectives for row ${idx + 1}`}
+                        value={item.objectives}
+                        onChange={(e) => updateRow(idx, "objectives", e.target.value)}
+                        placeholder="Key concepts, deduction rules, practice..."
+                        className="w-full px-2 py-1.5 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                      />
+                    </td>
+                    <td className="py-2 px-3 align-top">
+                      <input
+                        type="text"
+                        aria-label={`Duration hours for row ${idx + 1}`}
+                        value={item.hours || ""}
+                        onChange={(e) => updateRow(idx, "hours", e.target.value)}
+                        placeholder="2.5 hrs"
+                        className="w-full px-2 py-1.5 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                    </td>
+                    <td className="py-2 px-3 align-top text-right">
+                      <div className="inline-flex items-center gap-1">
+                        <button
+                          type="button"
+                          aria-label={`Move session ${idx + 1} up`}
+                          disabled={idx === 0}
+                          onClick={() => moveRow(idx, "up")}
+                          title="Move up"
+                          className="p-1 rounded text-slate-400 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                        >
+                          <ArrowUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`Move session ${idx + 1} down`}
+                          disabled={idx === curriculum.length - 1}
+                          onClick={() => moveRow(idx, "down")}
+                          title="Move down"
+                          className="p-1 rounded text-slate-400 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                        >
+                          <ArrowDown className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`Delete session ${idx + 1}`}
+                          onClick={() => removeRow(idx)}
+                          title="Delete row"
+                          className="p-1 rounded text-rose-500 hover:bg-rose-50 cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CourseFormCoreFields({
+  courseForm,
+  setCourseForm,
+}: {
+  courseForm: CourseFormData;
+  setCourseForm: React.Dispatch<React.SetStateAction<CourseFormData>>;
+}) {
+  return (
+    <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1">
+          <label htmlFor="modal-title" className="font-bold text-slate-700 uppercase">
+            Course Title *
+          </label>
+          <input
+            id="modal-title"
+            type="text"
+            required
+            value={courseForm.title}
+            onChange={(e) => setCourseForm({ ...courseForm, title: e.target.value })}
+            placeholder="e.g. GEOTOPIA 0.5"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label htmlFor="modal-subtitle" className="font-bold text-slate-700 uppercase">
+            Subtitle / Focus
+          </label>
+          <input
+            id="modal-subtitle"
+            type="text"
+            value={courseForm.subtitle}
+            onChange={(e) => setCourseForm({ ...courseForm, subtitle: e.target.value })}
+            placeholder="e.g. High School Geometry Foundations"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="space-y-1">
+          <label htmlFor="modal-term" className="font-bold text-slate-700 uppercase">
+            Term *
+          </label>
+          <select
+            id="modal-term"
+            value={courseForm.term}
+            onChange={(e) => setCourseForm({ ...courseForm, term: e.target.value })}
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+          >
+            <option value="Spring">Spring</option>
+            <option value="Fall">Fall</option>
+            <option value="Summer">Summer</option>
+          </select>
+        </div>
+
+        <div className="space-y-1">
+          <label htmlFor="modal-grade" className="font-bold text-slate-700 uppercase">
+            Target Grade *
+          </label>
+          <input
+            id="modal-grade"
+            type="text"
+            required
+            value={courseForm.grade}
+            onChange={(e) => setCourseForm({ ...courseForm, grade: e.target.value })}
+            placeholder="e.g. Grade 8-10"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label htmlFor="modal-price" className="font-bold text-slate-700 uppercase">
+            Tuition Price ($) *
+          </label>
+          <input
+            id="modal-price"
+            type="number"
+            required
+            value={courseForm.price}
+            onChange={(e) => setCourseForm({ ...courseForm, price: Number(e.target.value) })}
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="space-y-1">
+          <label htmlFor="modal-start" className="font-bold text-slate-700 uppercase">
+            Start Date *
+          </label>
+          <input
+            id="modal-start"
+            type="text"
+            required
+            value={courseForm.startDate}
+            onChange={(e) => setCourseForm({ ...courseForm, startDate: e.target.value })}
+            placeholder="e.g. February 3, 2026"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label htmlFor="modal-schedule" className="font-bold text-slate-700 uppercase">
+            Schedule Timing *
+          </label>
+          <input
+            id="modal-schedule"
+            type="text"
+            required
+            value={courseForm.schedule}
+            onChange={(e) => setCourseForm({ ...courseForm, schedule: e.target.value })}
+            placeholder="e.g. Thursdays 6:30 - 7:55 PM (CT)"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label htmlFor="modal-hours" className="font-bold text-slate-700 uppercase">
+            Hours Total
+          </label>
+          <input
+            id="modal-hours"
+            type="number"
+            value={courseForm.hours}
+            onChange={(e) => setCourseForm({ ...courseForm, hours: Number(e.target.value) })}
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-1">
+        <label htmlFor="modal-image" className="font-bold text-slate-700 uppercase">
+          Banner Image URL
+        </label>
+        <input
+          id="modal-image"
+          type="url"
+          value={courseForm.image}
+          onChange={(e) => setCourseForm({ ...courseForm, image: e.target.value })}
+          placeholder="https://images.unsplash.com/..."
+          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+        />
+      </div>
+
+      <div className="space-y-4 pt-2 border-t border-slate-100">
+        <div className="space-y-1">
+          <label
+            htmlFor="modal-desc"
+            className="font-bold text-slate-700 uppercase flex items-center justify-between"
+          >
+            <span>Summary Description (Catalog & Cards) *</span>
+            <span className="text-[10px] text-slate-400 font-normal">Shown on catalog cards</span>
+          </label>
+          <textarea
+            id="modal-desc"
+            rows={2}
+            required
+            value={courseForm.description}
+            onChange={(e) => setCourseForm({ ...courseForm, description: e.target.value })}
+            placeholder="Short summary highlighting course focus..."
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label
+            htmlFor="modal-detailed-desc"
+            className="font-bold text-slate-700 uppercase flex items-center justify-between"
+          >
+            <span>Comprehensive Description (Details Page)</span>
+            <span className="text-[10px] text-slate-400 font-normal">
+              Shown on dedicated course details page
+            </span>
+          </label>
+          <textarea
+            id="modal-detailed-desc"
+            rows={4}
+            value={courseForm.detailedDescription}
+            onChange={(e) => setCourseForm({ ...courseForm, detailedDescription: e.target.value })}
+            placeholder="Comprehensive overview, teaching methodology, classroom boardwork details..."
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+        </div>
+      </div>
+    </>
+  );
+}
+
 function CourseFormModal({
   editingCourse,
   courseForm,
@@ -1561,171 +2044,35 @@ function CourseFormModal({
 }) {
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-6 shadow-2xl my-8">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-          <h3 className="text-xl font-black text-slate-900">
-            {editingCourse ? "Edit Course Details" : "Add New Math Course"}
-          </h3>
+      <div className="bg-white rounded-3xl max-w-4xl w-full p-6 sm:p-8 space-y-6 shadow-2xl my-8 max-h-[92vh] flex flex-col">
+        {/* Modal Header */}
+        <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
+          <div>
+            <h3 className="text-xl font-black text-slate-900">
+              {editingCourse ? "Edit Course Details & Curriculum" : "Add New Math Course"}
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Configure course information, marketing description, and weekly curriculum table view.
+            </p>
+          </div>
           <button
             onClick={onClose}
             aria-label="Close modal"
-            className="p-1 rounded-lg text-slate-400 hover:text-slate-700"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={onSaveCourse} className="space-y-4 text-xs">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label htmlFor="modal-title" className="font-bold text-slate-700 uppercase">
-                Course Title *
-              </label>
-              <input
-                id="modal-title"
-                type="text"
-                required
-                value={courseForm.title}
-                onChange={(e) => setCourseForm({ ...courseForm, title: e.target.value })}
-                placeholder="e.g. GEOTOPIA 0.5"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              />
-            </div>
+        {/* Scrollable Form Body */}
+        <form onSubmit={onSaveCourse} className="flex-1 overflow-y-auto pr-1 space-y-5 text-xs">
+          <CourseFormCoreFields courseForm={courseForm} setCourseForm={setCourseForm} />
 
-            <div className="space-y-1">
-              <label htmlFor="modal-subtitle" className="font-bold text-slate-700 uppercase">
-                Subtitle / Focus
-              </label>
-              <input
-                id="modal-subtitle"
-                type="text"
-                value={courseForm.subtitle}
-                onChange={(e) => setCourseForm({ ...courseForm, subtitle: e.target.value })}
-                placeholder="e.g. High School Geometry Foundations"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="space-y-1">
-              <label htmlFor="modal-term" className="font-bold text-slate-700 uppercase">
-                Term *
-              </label>
-              <select
-                id="modal-term"
-                value={courseForm.term}
-                onChange={(e) => setCourseForm({ ...courseForm, term: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-              >
-                <option value="Spring">Spring</option>
-                <option value="Fall">Fall</option>
-                <option value="Summer">Summer</option>
-              </select>
-            </div>
-
-            <div className="space-y-1">
-              <label htmlFor="modal-grade" className="font-bold text-slate-700 uppercase">
-                Target Grade *
-              </label>
-              <input
-                id="modal-grade"
-                type="text"
-                required
-                value={courseForm.grade}
-                onChange={(e) => setCourseForm({ ...courseForm, grade: e.target.value })}
-                placeholder="e.g. Grade 8-10"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label htmlFor="modal-price" className="font-bold text-slate-700 uppercase">
-                Tuition Price ($) *
-              </label>
-              <input
-                id="modal-price"
-                type="number"
-                required
-                value={courseForm.price}
-                onChange={(e) => setCourseForm({ ...courseForm, price: Number(e.target.value) })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="space-y-1">
-              <label htmlFor="modal-start" className="font-bold text-slate-700 uppercase">
-                Start Date *
-              </label>
-              <input
-                id="modal-start"
-                type="text"
-                required
-                value={courseForm.startDate}
-                onChange={(e) => setCourseForm({ ...courseForm, startDate: e.target.value })}
-                placeholder="e.g. February 3, 2026"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label htmlFor="modal-schedule" className="font-bold text-slate-700 uppercase">
-                Schedule Timing *
-              </label>
-              <input
-                id="modal-schedule"
-                type="text"
-                required
-                value={courseForm.schedule}
-                onChange={(e) => setCourseForm({ ...courseForm, schedule: e.target.value })}
-                placeholder="e.g. Thursdays 6:30 - 7:55 PM (CT)"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label htmlFor="modal-hours" className="font-bold text-slate-700 uppercase">
-                Hours Total
-              </label>
-              <input
-                id="modal-hours"
-                type="number"
-                value={courseForm.hours}
-                onChange={(e) => setCourseForm({ ...courseForm, hours: Number(e.target.value) })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <label htmlFor="modal-image" className="font-bold text-slate-700 uppercase">
-              Banner Image URL
-            </label>
-            <input
-              id="modal-image"
-              type="url"
-              value={courseForm.image}
-              onChange={(e) => setCourseForm({ ...courseForm, image: e.target.value })}
-              placeholder="https://images.unsplash.com/..."
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label htmlFor="modal-desc" className="font-bold text-slate-700 uppercase">
-              Description / Syllabus
-            </label>
-            <textarea
-              id="modal-desc"
-              rows={3}
-              value={courseForm.description}
-              onChange={(e) => setCourseForm({ ...courseForm, description: e.target.value })}
-              placeholder="Course overview, syllabus highlights, and preparation goals..."
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-            ></textarea>
-          </div>
+          {/* Curriculum Table Editor Component */}
+          <CurriculumTableEditor
+            curriculum={courseForm.curriculum || []}
+            onChange={(updated) => setCourseForm({ ...courseForm, curriculum: updated })}
+          />
 
           {/* Toggles */}
           <div className="flex items-center gap-6 pt-2">
@@ -1758,7 +2105,8 @@ function CourseFormModal({
             </label>
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+          {/* Footer Actions */}
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 sticky bottom-0 bg-white">
             <button
               type="button"
               onClick={onClose}
@@ -1770,7 +2118,7 @@ function CourseFormModal({
               type="submit"
               className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md cursor-pointer"
             >
-              Save Course
+              Save Course & Curriculum
             </button>
           </div>
         </form>

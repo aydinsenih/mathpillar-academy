@@ -18,9 +18,11 @@ export default function SpotlightCourseBanner({ course }: { course?: Course }) {
               <span>Spotlight Course · {course.grade}</span>
             </div>
 
-            <h3 className="text-2xl sm:text-4xl font-black tracking-tight text-white">
-              {course.title}
-            </h3>
+            <Link href={`/courses/${course.id}`} className="block group/title">
+              <h3 className="text-2xl sm:text-4xl font-black tracking-tight text-white group-hover/title:text-amber-300 transition-colors">
+                {course.title}
+              </h3>
+            </Link>
 
             <p className="text-sm sm:text-base text-slate-200 leading-relaxed">
               {course.description}
@@ -50,13 +52,22 @@ export default function SpotlightCourseBanner({ course }: { course?: Course }) {
               </p>
             </div>
 
-            <Link
-              href={`/register?course=${course.id}`}
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl font-bold text-sm text-slate-950 bg-amber-400 hover:bg-amber-300 shadow-lg shadow-amber-400/20 transition-all hover:scale-102"
-            >
-              <span>Enroll Now</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href={`/courses/${course.id}`}
+                className="inline-flex items-center gap-1.5 px-4 py-3 rounded-xl font-bold text-xs text-white bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-xs transition-colors"
+              >
+                <span>View Curriculum</span>
+              </Link>
+
+              <Link
+                href={`/register?course=${course.id}`}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-xs sm:text-sm text-slate-950 bg-amber-400 hover:bg-amber-300 shadow-lg shadow-amber-400/20 transition-all hover:scale-102"
+              >
+                <span>Enroll Now</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
         </div>
       </div>

@@ -50,9 +50,11 @@ export default function CourseCard({ course }: { course: Course }) {
 
         {/* Title overlay */}
         <div className="absolute bottom-3 left-4 right-4">
-          <h3 className="text-lg font-black text-white tracking-tight leading-snug group-hover:text-amber-300 transition-colors">
-            {course.title}
-          </h3>
+          <Link href={`/courses/${course.id}`} className="block group/title">
+            <h3 className="text-lg font-black text-white tracking-tight leading-snug group-hover/title:text-amber-300 transition-colors">
+              {course.title}
+            </h3>
+          </Link>
           <p className="text-xs text-slate-300 line-clamp-1">{course.subtitle}</p>
         </div>
       </div>
@@ -80,7 +82,7 @@ export default function CourseCard({ course }: { course: Course }) {
         </div>
 
         {/* Price & Action */}
-        <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+        <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
           <div>
             <div className="flex items-baseline gap-1">
               <span className="text-xs font-semibold text-slate-500">$</span>
@@ -91,13 +93,22 @@ export default function CourseCard({ course }: { course: Course }) {
             </span>
           </div>
 
-          <Link
-            href={`/register?course=${course.id}`}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-sm hover:shadow-md transition-all"
-          >
-            <span>Enroll</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/courses/${course.id}`}
+              className="inline-flex items-center px-3 py-2 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors"
+            >
+              <span>Details</span>
+            </Link>
+
+            <Link
+              href={`/register?course=${course.id}`}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-sm hover:shadow-md transition-all"
+            >
+              <span>Enroll</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
         </div>
       </div>
     </div>
