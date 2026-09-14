@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Shield, KeyRound, ArrowRight, Sparkles, AlertCircle } from "lucide-react";
+import { Shield, ArrowRight, AlertCircle } from "lucide-react";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -11,12 +11,6 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  const fillDemo = () => {
-    setEmail("admin@mathpillar.com");
-    setPassword("admin123");
-    setError("");
-  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,32 +55,6 @@ export default function AdminLoginPage() {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4">
-        {/* Pre-defined Demo Credentials Box */}
-        <div className="mb-6 bg-slate-800/80 border border-slate-700 rounded-2xl p-4 text-xs text-slate-300 space-y-2 shadow-inner">
-          <div className="flex items-center justify-between">
-            <span className="font-bold text-amber-400 flex items-center gap-1.5">
-              <KeyRound className="w-3.5 h-3.5" />
-              Pre-defined Credentials
-            </span>
-            <button
-              type="button"
-              onClick={fillDemo}
-              className="px-2.5 py-1 rounded-md bg-amber-400/20 text-amber-300 hover:bg-amber-400/30 font-bold transition-colors cursor-pointer flex items-center gap-1"
-            >
-              <Sparkles className="w-3 h-3" />
-              <span>Fill Demo</span>
-            </button>
-          </div>
-          <div className="font-mono text-[11px] text-slate-400 space-y-0.5">
-            <p>
-              Email: <span className="text-slate-200 font-bold">admin@mathpillar.com</span>
-            </p>
-            <p>
-              Password: <span className="text-slate-200 font-bold">admin123</span>
-            </p>
-          </div>
-        </div>
-
         {/* Login Form Box */}
         <div className="bg-slate-800/50 backdrop-blur-md py-8 px-6 sm:px-10 shadow-2xl rounded-3xl border border-slate-700/60 space-y-6">
           {error && (

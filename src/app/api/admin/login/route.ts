@@ -31,10 +31,7 @@ export async function POST(request: Request) {
       });
     }
 
-    return NextResponse.json(
-      { error: "Invalid admin credentials. Default credentials: admin@mathpillar.com / admin123" },
-      { status: 401 },
-    );
+    return NextResponse.json({ error: "Invalid admin email or password" }, { status: 401 });
   } catch (error) {
     console.error("Error during admin login:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
