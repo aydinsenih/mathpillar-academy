@@ -1,10 +1,17 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
 import { Sparkles, Calendar, Clock, ArrowRight, MapPin } from "lucide-react";
 import type { Course } from "@/lib/courses-db";
+import { playPositiveChime } from "@/lib/sound";
 
 export default function SpotlightCourseBanner({ course }: { course?: Course }) {
   if (!course) return null;
+
+  const handleClick = () => {
+    playPositiveChime();
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-8 my-10">
@@ -18,7 +25,11 @@ export default function SpotlightCourseBanner({ course }: { course?: Course }) {
               <span>Spotlight Course · {course.grade}</span>
             </div>
 
-            <Link href={`/courses/${course.id}`} className="block group/title">
+            <Link
+              href={`/courses/${course.id}`}
+              onClick={handleClick}
+              className="block group/title"
+            >
               <h3 className="text-2xl sm:text-4xl font-black tracking-tight text-white group-hover/title:text-amber-300 transition-colors">
                 {course.title}
               </h3>
@@ -31,7 +42,7 @@ export default function SpotlightCourseBanner({ course }: { course?: Course }) {
             <div className="flex flex-wrap items-center gap-5 pt-2 text-xs sm:text-sm text-slate-300">
               <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
                 <MapPin className="w-4 h-4 text-emerald-400" />
-                <span>In-Person Only</span>
+                <span>100% In-Person Physical Classroom</span>
               </div>
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-rose-400" />
@@ -55,16 +66,10 @@ export default function SpotlightCourseBanner({ course }: { course?: Course }) {
             <div className="flex flex-wrap items-center gap-2">
               <Link
                 href={`/courses/${course.id}`}
-                className="inline-flex items-center gap-1.5 px-4 py-3 rounded-xl font-bold text-xs text-white bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-xs transition-colors"
+                onClick={handleClick}
+                className="inline-flex items-center gap-1.5 px-5 py-3 rounded-xl font-bold text-xs text-white bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-xs transition-colors"
               >
-                <span>View Curriculum</span>
-              </Link>
-
-              <Link
-                href={`/register?course=${course.id}`}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-xs sm:text-sm text-slate-950 bg-amber-400 hover:bg-amber-300 shadow-lg shadow-amber-400/20 transition-all hover:scale-102"
-              >
-                <span>Enroll Now</span>
+                <span>Explore Course</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>

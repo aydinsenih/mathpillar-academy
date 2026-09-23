@@ -98,16 +98,15 @@ function CoursesContent() {
       <div className="text-center space-y-4 max-w-3xl mx-auto">
         <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-black uppercase tracking-wider">
           <BookOpen className="w-4 h-4 text-blue-600" />
-          <span>{activeTerm} 2026 Curriculum & Cohorts</span>
+          <span>{activeTerm} 2026 Cohorts · Where math takes shape</span>
         </div>
         <h1 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight">
-          MathPillar Course Catalog
+          MathPillar Academy Course Catalog
         </h1>
         <p className="text-base sm:text-lg text-slate-600 leading-relaxed">
-          Explore our small in-person cohorts for the {activeTerm} semester. All courses are held
-          strictly in our physical classrooms—no online or remote sessions. Master foundational math
-          fluency, geometry proofs, integrated algebra, and AMC contest preparation face-to-face
-          with expert faculty.
+          Explore our small in-person cohorts for the {activeTerm} semester. Click on any course to
+          review the full syllabus, student learning outcomes, and classroom approach. All courses
+          are held strictly in our physical academy classrooms.
         </p>
       </div>
 

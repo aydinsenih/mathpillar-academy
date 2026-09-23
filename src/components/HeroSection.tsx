@@ -20,37 +20,37 @@ export default function HeroSection() {
           {/* Headlines & CTAs */}
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs sm:text-sm font-bold backdrop-blur-sm shadow-inner">
             <MapPin className="w-4 h-4 text-emerald-400" />
-            <span>100% In-Person Learning · On-Campus Classrooms</span>
+            <span>100% In-Person Learning · Physical Academy Classrooms</span>
           </div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.15]">
-            In-Person Math.{" "}
+            Where Math{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-rose-400 to-pink-300">
-              Real Engagement.
+              Takes Shape.
             </span>
             <br />
-            Fulfill Your Potential.
+            100% In-Person Excellence.
           </h1>
 
           <p className="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed font-normal">
-            All MathPillar courses are strictly in-person with hands-on chalkboard problem solving.
-            From foundational fluency to honors geometry proofs and AMC contest prep, students
-            collaborate face-to-face with expert faculty.
+            Welcome to MathPillar Academy. From foundational fluency to proofs-based geometry and
+            Olympiad contest preparation, students collaborate face-to-face with expert faculty in
+            small chalkboard cohorts.
           </p>
 
           {/* Value Checkpoints */}
           <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs sm:text-sm text-slate-300 pt-2">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span className="font-semibold text-white">In-Person Only (No Online)</span>
+              <span className="font-semibold text-white">100% In-Person (No Zoom)</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Small Physical Cohorts</span>
+              <span>Small 6–10 Student Cohorts</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>PhD & Master Faculty</span>
+              <span>Published Curriculum Authors</span>
             </div>
           </div>
 
@@ -61,14 +61,14 @@ export default function HeroSection() {
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-xl text-base font-bold text-white bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-600/30 transition-all hover:scale-102"
             >
               <BookOpen className="w-5 h-5" />
-              <span>View Courses</span>
+              <span>Explore All Courses</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
             <Link
               href="/register"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-xl text-base font-bold text-white bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 shadow-lg shadow-rose-600/30 transition-all hover:scale-102"
             >
-              <span>Register Now</span>
+              <span>Apply to Course</span>
             </Link>
           </div>
         </div>

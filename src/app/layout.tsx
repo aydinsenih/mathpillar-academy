@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MathPillar Academy · The Math Learning Place",
+  title: "MathPillar Academy · Where Math Takes Shape",
   description:
-    "Premier in-person mathematics coaching for grades 4-12, honors algebra, proofs-based geometry, and AMC 8/10/12 contest prep. All courses are strictly in-person.",
+    "Where math takes shape. Premier in-person mathematics academy for grades 4-12, proofs-based geometry, honors algebra, and AMC 8/10/12 contest prep in small chalkboard cohorts.",
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },

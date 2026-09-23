@@ -5,6 +5,8 @@ import Footer from "@/components/Footer";
 import HeroSection from "@/components/HeroSection";
 import CoursesCountdown from "@/components/CoursesCountdown";
 import CourseCard from "@/components/CourseCard";
+import AboutSection from "@/components/AboutSection";
+import LocationSection from "@/components/LocationSection";
 import SpotlightCourseBanner from "@/components/SpotlightCourseBanner";
 import WhyUsSection from "@/components/WhyUsSection";
 import InstructorsSection from "@/components/InstructorsSection";
@@ -33,6 +35,9 @@ export default async function HomePage() {
       <main className="flex-1">
         {/* 1. Hero Section */}
         <HeroSection />
+
+        {/* 2. About Us / Where Math Takes Shape */}
+        <AboutSection />
 
         {/* 3. Upcoming Term Countdown */}
         <CoursesCountdown
@@ -96,6 +101,9 @@ export default async function HomePage() {
 
         {/* 7. Instructors Section */}
         <InstructorsSection instructors={instructors} />
+
+        {/* 8. Where We Are? / Campus Location */}
+        <LocationSection />
 
         {/* 9. Contact / Questions Banner */}
         <QuestionsBanner />
