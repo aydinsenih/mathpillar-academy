@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Menu, X } from "lucide-react";
 
 export default function Header() {
@@ -29,19 +30,19 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3.5 flex items-center justify-between">
         {/* Brand Logo */}
         <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-rose-500 via-indigo-600 to-amber-500 flex items-center justify-center text-white shadow-md shadow-indigo-200 group-hover:scale-105 transition-transform">
-            <span className="text-2xl font-black tracking-tighter">π</span>
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 group-hover:text-blue-600 transition-colors">
-                MATHPILLAR
-              </span>
-              <span className="text-xs font-black uppercase px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 tracking-wider">
-                ACADEMY
-              </span>
-            </div>
-            <p className="text-[10px] sm:text-[11px] font-bold tracking-[0.2em] text-slate-400 uppercase">
+          <Image
+            src="/images/logo.png"
+            alt="Mathpillar"
+            width={210}
+            height={43}
+            priority
+            className="h-9 sm:h-10 w-auto group-hover:opacity-90 transition-opacity"
+          />
+          <div className="hidden sm:flex flex-col justify-center border-l border-slate-200 pl-3 py-0.5">
+            <span className="text-[10px] font-black uppercase px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 tracking-wider w-fit">
+              ACADEMY
+            </span>
+            <p className="text-[9px] font-bold tracking-[0.16em] text-slate-400 uppercase mt-0.5 whitespace-nowrap">
               The Math Learning Place
             </p>
           </div>

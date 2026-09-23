@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Heart, MapPin } from "lucide-react";
 
 export default function Footer() {
@@ -16,11 +17,14 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           {/* Col 1: Brand Info */}
           <div className="space-y-4 md:col-span-1">
-            <Link href="/" className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-lg bg-rose-500 flex items-center justify-center text-white font-black text-xl">
-                π
-              </div>
-              <span className="text-xl font-black text-white tracking-tight">MATHPILLAR</span>
+            <Link href="/" className="inline-block group">
+              <Image
+                src="/images/logo-white.png"
+                alt="Mathpillar"
+                width={190}
+                height={38}
+                className="h-8 sm:h-9 w-auto group-hover:opacity-90 transition-opacity"
+              />
             </Link>
             <p className="text-xs uppercase font-bold tracking-widest text-slate-500">
               The Math Learning Place

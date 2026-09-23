@@ -16,6 +16,13 @@ export const metadata: Metadata = {
   title: "MathPillar Academy · The Math Learning Place",
   description:
     "Premier in-person mathematics coaching for grades 4-12, honors algebra, proofs-based geometry, and AMC 8/10/12 contest prep. All courses are strictly in-person.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/images/logo-icon.png", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

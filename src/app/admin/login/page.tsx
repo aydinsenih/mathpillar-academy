@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Shield, ArrowRight, AlertCircle } from "lucide-react";
 
 export default function AdminLoginPage() {
@@ -44,9 +45,14 @@ export default function AdminLoginPage() {
       {/* Brand Header */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center space-y-3">
         <Link href="/" className="inline-flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-rose-500 via-indigo-600 to-amber-500 flex items-center justify-center text-white text-2xl font-black shadow-lg shadow-indigo-500/30">
-            π
-          </div>
+          <Image
+            src="/images/logo-app-icon.png"
+            alt="Mathpillar"
+            width={64}
+            height={64}
+            priority
+            className="w-14 h-14 rounded-2xl shadow-xl shadow-black/40 hover:scale-105 transition-transform"
+          />
         </Link>
         <h2 className="text-3xl font-black text-white tracking-tight">Admin Portal</h2>
         <p className="text-xs uppercase tracking-widest text-slate-400 font-bold">
